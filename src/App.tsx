@@ -3,14 +3,20 @@ import { OrbitControls } from '@react-three/drei'
 import { Physics } from '@react-three/cannon'
 import { Bullet } from './components/Bullet'
 import { Plane } from './components/Plane'
+import { Enemy } from './components/Enemy'
 import { useState, useCallback, useEffect, useRef } from 'react'
 
 function App() {
   const [bullets, setBullets] = useState<{ id: number; position: [number, number, number] }[]>([])
   const [nextId, setNextId] = useState(0)
   const [cooldown, setCooldown] = useState(0)
+  const [enemies, setEnemies] = useState<{ id: number; position: [number, number, number] }[]>([
+    { id: 1, position: [0, -1, -10] },    // y = -1 because enemy is 1 unit tall and plane is at y=-2
+    { id: 2, position: [-2, -1, -10] },   // So bottom of enemy (at -2) will touch plane
+    { id: 3, position: [2, -1, -10] },
+  ])
   const lastShotTime = useRef(0)
-  const SHOT_DELAY = 2000 // 2 seconds in milliseconds
+  const SHOT_DELAY = 2000
 
   const handleShoot = useCallback(() => {
     const currentTime = Date.now()
@@ -26,6 +32,10 @@ function App() {
 
   const handleBulletCollide = useCallback((bulletId: number) => {
     setBullets(prev => prev.filter(bullet => bullet.id !== bulletId))
+  }, [])
+
+  const handleEnemyHit = useCallback((enemyId: number) => {
+    setEnemies(prev => prev.filter(enemy => enemy.id !== enemyId))
   }, [])
 
   useEffect(() => {
@@ -65,7 +75,8 @@ function App() {
         padding: '10px',
         borderRadius: '5px'
       }}>
-        Cooldown: {cooldown.toFixed(0)}ms
+        <div>Cooldown: {cooldown.toFixed(0)}ms</div>
+        <div>Enemies: {enemies.length}</div>
       </div>
 
       <Canvas camera={{ position: [5, 5, 5], fov: 75 }}>
@@ -83,6 +94,14 @@ function App() {
               position={bullet.position}
               velocity={[0, 5, -15]}
               onCollide={() => handleBulletCollide(bullet.id)}
+            />
+          ))}
+          {enemies.map(enemy => (
+            <Enemy
+              key={enemy.id}
+              position={enemy.position}
+              size={[1, 1, 1]}
+              onHit={() => handleEnemyHit(enemy.id)}
             />
           ))}
           <Plane />
